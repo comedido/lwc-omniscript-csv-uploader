@@ -1,0 +1,43 @@
+<template>
+    <lightning-card title="CSV Uploader" icon-name="custom:custom19">
+        
+        <div if:true={error}>
+            {error}
+        </div>
+
+        <div if:false={error} class="slds-form--inline">
+            <div class="slds-form-element">
+                <lightning-input type="file"
+                                label="Choose File"
+                                accept={acceptedFormats}
+                                onchange={importcsv}
+                                multiple>
+                </lightning-input>
+            </div>  
+            
+            <div class="slds-form-element slds-text-body_small slds-text-color_error">{filename}</div>
+            
+            <div class="slds-form-element">
+                <lightning-button label="Import" title="Non-primary action" onclick={readFiles} class="slds-m-left_x-small"></lightning-button>
+            </div>
+            
+            <div style="margin-left:4%" class="slds-form-element">
+                <template if:true={showLoadingSpinner}>
+                        <lightning-spinner alternative-text="Uploading......" size="medium"></lightning-spinner>
+                </template>
+            </div>
+        </div>
+        
+        <br/>
+
+        <div if:true={data}>
+            <lightning-datatable
+                    data={data}
+                    columns={columns}
+                    key-field="Employee ID"
+            >
+            </lightning-datatable>
+        </div>
+
+    </lightning-card> 
+</template>
