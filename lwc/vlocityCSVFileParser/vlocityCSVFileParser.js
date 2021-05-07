@@ -1,7 +1,7 @@
 /*
 ** LWC to upload csv file in order to load Commercial Properties
 ** Developer: Aaron Dominguez
-** Date: 10/09/2020
+** Date: 30/04/2021
 */ 
 
 import { LightningElement, track, api } from 'lwc';
@@ -15,8 +15,14 @@ export default class VlocityCSVFileParser extends OmniscriptBaseMixin(LightningE
     
     @track columns = [];
     @track data;
+    @track rowTotals = 0;
+    @track keyField;
     @track showLoadingSpinner = false;
     @track error;    
+
+    debug = true;
+    @api draftValues = [];
+    @track rowSelectedTotals = 0;
     
     filesUploaded = [];
     filename;
@@ -57,8 +63,8 @@ export default class VlocityCSVFileParser extends OmniscriptBaseMixin(LightningE
                     // Process the CSV to return a JSON
                     this.data = JSON.parse(this.csvJSON(result));
 
-                    // Update OmniScript JSON
-                    this.omniUpdateDataJson(this.data);
+                    // Update OmniScript JSON to include all parsed elements
+                    //this.omniUpdateDataJson(this.data);
 
                     this.dispatchEvent(
                         new ShowToastEvent({
@@ -106,18 +112,22 @@ export default class VlocityCSVFileParser extends OmniscriptBaseMixin(LightningE
 
         var lines = csv.split(/\r\n|\n/);
         var result = [];
-        var headers = lines[0].split(";");
+        var headers = lines[0].split(",");
 
         // Set up DataTable columns
         headers.forEach((header, i) => {
-            let col = { label: header, fieldName: header }
+            let col = { label: header, fieldName: header, editable: true }
             this.columns.push(col);
         });
+
+        // Set up keyField
+        this.keyField = headers[0];
 
         // Iterate over all rows
         for(var i=1; i<lines.length-1; i++) {
             var obj = {};
-            var currentline = lines[i].split(";");
+            var currentline = lines[i].split(",");
+            this.rowTotals ++;
 
             for(var j=0; j<headers.length; j++) {
                 obj[headers[j]] = currentline[j];
@@ -128,6 +138,73 @@ export default class VlocityCSVFileParser extends OmniscriptBaseMixin(LightningE
 
         // Return result as a formatted JSON
         return JSON.stringify(result);
+    }
+
+    /**
+     * Handles selection/deselection of rows in the table
+     * 
+     * @param {*} event The row selection event
+     */
+     handleRowSelection(event) {
+
+        try {
+
+            let selections = event.detail.selectedRows;
+            this.rowSelectedTotals = selections.length;
+
+            if (this.debug) console.log("Row(s) Selected -> " + JSON.stringify(selections));            
+            super.omniUpdateDataJson(selections);
+        }
+        catch (err) {
+            console.error("Error in demo_datatable.handleRowSelected() -> " + err);
+        }
+    }
+
+    /**
+     * Handles any inline edit.  The event can contain updates for multiple rows,
+     * and each row may have multiple updates.
+     * 
+     * @param {*} event The inline edit event 
+     */
+     handleSave(event) {
+
+        try {
+        
+            let updates = event.detail.draftValues;
+
+            // Track updates for a call to a DataRaptor
+            //let drUpdates = [];
+
+            // Handle multiple updates at once
+            for (let i=0; i<updates.length; i++) {
+
+                if (this.debug) console.log("Handling Save! -> " + JSON.stringify(updates[i]));
+
+                // Find the row and update accordingly
+                for (let x=0; x<this.data.length; x++) {
+                    if (this.data[x][this.keyField] == updates[i][this.keyField]) {
+                        
+                        // Found the Row, make the update(s)
+                        for (let key in updates[i]) this.data[x][key] = updates[i][key];
+
+                        // Call the DataRaptor
+                        //if (this.updateDataraptor) drUpdates.push(this.data[x]);
+                    }
+                }
+            }
+
+            // Clear the draft values now that we've persisted them
+            this.draftValues = [];
+
+            // Call the Update DataRaptor
+            //this.dataRaptorUpdates(drUpdates);
+
+            // Make sure any edits are carried over to the OmniScript JSON if the row being edited happens to be selected
+            super.omniUpdateDataJson(this.template.querySelector('lightning-datatable').getSelectedRows());
+        }
+        catch (err) {
+            console.error("Error in demo_datatable.handleSave() -> " + err);
+        }
     }
 
     // Super method to validate step in Omniscript

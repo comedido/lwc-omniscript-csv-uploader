@@ -1,5 +1,5 @@
 <template>
-    <lightning-card title="CSV Uploader" icon-name="custom:custom19">
+    <lightning-card title="Upload your File" icon-name="custom:custom19">
         
         <div if:true={error}>
             {error}
@@ -30,11 +30,16 @@
         
         <br/>
 
-        <div if:true={data}>
+        <div if:true={data} class="li-datatable-container">
+            <p>Total Rows: <b>{rowTotals}</b> Selected Rows: {rowSelectedTotals}</p>
             <lightning-datatable
                     data={data}
                     columns={columns}
-                    key-field="Employee ID"
+                    key-field={keyField}
+                    onrowselection={handleRowSelection}
+                    show-row-number-column
+                    onsave={handleSave}
+                    draft-values={draftValues}
             >
             </lightning-datatable>
         </div>
