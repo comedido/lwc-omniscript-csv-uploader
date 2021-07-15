@@ -1,5 +1,5 @@
 /*
-** LWC to upload csv file in order to load Commercial Properties
+** LWC to upload csv file in order to load records
 ** Developer: Aaron Dominguez
 ** Date: 30/04/2021
 */ 
